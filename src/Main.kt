@@ -15,9 +15,14 @@ fun main() {
 
         while (!validMove) {
             print("Enter the coordinates for ${if (currentPlayer == 'X') "X" else "O"}: ")
-            val input = readln()
+            val input = readlnOrNull()
 
-            val coordinates : List<Int> = input.split(" ").mapNotNull { it.toIntOrNull() }
+            if (input == null) {
+                println("The game is over ;(")
+                return
+            }
+
+            val coordinates : List<Int> = input.split(' ', '\t').mapNotNull { it.toIntOrNull() }
 
             if (coordinates.size != 2) {
                 println("You should enter two numbers!")
@@ -48,22 +53,16 @@ fun main() {
         printGrid(grid)
 
         // Check game status
-        val status = checkGameStatus(grid)
-
-        when (status) {
-            "X wins" -> {
-                println("X wins")
+        when (val status = checkGameStatus(grid)) {
+            is Win -> {
+                println(status.msg)
                 gameOver = true
             }
-            "O wins" -> {
-                println("O wins")
+            is Draw -> {
+                println(status.msg)
                 gameOver = true
             }
-            "Draw" -> {
-                println("Draw")
-                gameOver = true
-            }
-            else -> {
+            is Continue -> {
                 // Continue game, switch player
                 currentPlayer = if (currentPlayer == 'X') 'O' else 'X'
             }
@@ -83,29 +82,34 @@ fun printGrid(grid: CharArray) {
     println("---------")
 }
 
-fun checkGameStatus(grid: CharArray): String {
+sealed class StatusType
+class Win(var msg: String) : StatusType()
+class Draw(var msg: String) : StatusType()
+class Continue() : StatusType()
+
+fun checkGameStatus(grid: CharArray): StatusType {
     // Check rows
     for (i in 0..2) {
         if (grid[i * 3] == grid[i * 3 + 1] && grid[i * 3 + 1] == grid[i * 3 + 2] && grid[i * 3] != '_') {
-            return "${grid[i * 3]} wins"
+            return Win("${grid[i * 3]} wins")
         }
     }
 
     // Check columns
     for (j in 0..2) {
         if (grid[j] == grid[j + 3] && grid[j + 3] == grid[j + 6] && grid[j] != '_') {
-            return "${grid[j]} wins"
+            return Win("${grid[j]} wins")
         }
     }
 
     // Check diagonals
     if (grid[0] == grid[4] && grid[4] == grid[8] && grid[0] != '_') {
-        return "${grid[0]} wins"
+        return Win("${grid[0]} wins")
     }
     if (grid[2] == grid[4] && grid[4] == grid[6] && grid[2] != '_') {
-        return "${grid[2]} wins"
+        return Win("${grid[2]} wins")
     }
 
     // Check for draw
-    return if (grid.none { it == '_' }) "Draw" else "Game not finished"
+    return if (grid.none { it == '_' }) Draw("Draw") else Continue()
 }
